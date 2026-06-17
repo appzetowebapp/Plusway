@@ -32,8 +32,6 @@ class WebViewScreen extends StatefulWidget {
 
 class _WebViewScreenState extends State<WebViewScreen> {
   InAppWebViewController? _webViewController;
-  bool _isLoading = true;
-  double _loadingProgress = 0.0;
   bool _shareInProgress = false;
 
   bool _isOnline = true;
@@ -55,12 +53,16 @@ class _WebViewScreenState extends State<WebViewScreen> {
       settings: PullToRefreshSettings(color: AppConfig.primaryColor),
       onRefresh: () async {
         if (_webViewController != null) {
-          // await _webViewController!.loadUrl(
-          //   urlRequest: URLRequest(url: WebUri(AppConfig.webUrl)),
-          // );
-
-          // Reload the current page instead of going back to home
-          await _webViewController!.reload();
+          if (Platform.isAndroid) {
+            await _webViewController!.reload();
+          } else if (Platform.isIOS) {
+            final url = await _webViewController!.getUrl();
+            if (url != null) {
+              await _webViewController!.loadUrl(
+                urlRequest: URLRequest(url: url),
+              );
+            }
+          }
         }
       },
     );
@@ -652,7 +654,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
             var isLogin = urlString.includes('/auth/login') || 
                           urlString.includes('/users/login') ||
                           urlString.includes('/auth/signup-verify') ||
-                          urlString.includes('/auth/verify-otp');
+                          urlString.includes('/customer/verify-otp');
             
             // Call original fetch
             try {
@@ -695,7 +697,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
             if (url && (url.includes('/auth/login') || 
                         url.includes('/users/login') ||
                         url.includes('/auth/signup-verify') ||
-                        url.includes('/auth/verify-otp'))) {
+                        url.includes('/customer/verify-otp'))) {
                this.addEventListener('load', function() {
                   try {
                     var responseBody = self.responseText;
@@ -746,7 +748,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 // 1. structure: { "accessToken": "...", "user": { "phone": "..." } }
                 // 2. structure: { "token": "...", "data": { "user": { "phoneNumber": "..." } } }
 
-                String? accessToken = body['accessToken']?.toString();
+                String? accessToken = body['token']?.toString();
                 if (accessToken == null && body['token'] != null) {
                   accessToken = body['token'].toString();
                 }
@@ -754,7 +756,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 if (accessToken == null &&
                     body['data'] != null &&
                     body['data'] is Map) {
-                  accessToken = body['data']['accessToken']?.toString();
+                  accessToken = body['data']['token']?.toString();
                 }
 
                 if (accessToken != null && accessToken.isNotEmpty) {
@@ -1627,7 +1629,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
                       },
                       onLoadStart: (controller, url) {
                         setState(() {
-                          _isLoading = true;
                           _phoneListenerInjected = false;
                           _linkInterceptorInjected = false;
                         });
@@ -1635,9 +1636,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
                       },
                       onLoadStop: (controller, url) async {
                         setState(() {
-                          _isLoading = false;
                           _pullToRefreshController.endRefreshing();
-                          _loadingProgress = 1.0;
                         });
                         debugPrint('✅ Loading finished: $url');
                         await _injectPhoneCaptureScript(controller);
@@ -1653,19 +1652,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
                         );
                       },
                       onProgressChanged: (controller, progress) {
-                        setState(() {
-                          _loadingProgress = progress / 100;
-                          if (progress >= 100) {
-                            _isLoading = false;
-                          }
-                        });
+                        if (progress == 100) {
+                          _pullToRefreshController.endRefreshing();
+                        }
                         debugPrint('📊 Loading progress: $progress%');
                       },
                       onLoadError: (controller, url, code, message) {
                         _pullToRefreshController.endRefreshing();
-                        setState(() {
-                          _isLoading = false;
-                        });
                         debugPrint('❌ Load error: $message (code: $code)');
                       },
                       onGeolocationPermissionsShowPrompt:
@@ -1986,35 +1979,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
                         }
                       },
                     ),
-                    // Loading indicator overlay - only show when loading
-                    if (_isLoading)
-                      Container(
-                        color: Colors.white.withOpacity(0.9),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircularProgressIndicator(
-                                value: _loadingProgress < 1.0 &&
-                                        _loadingProgress > 0
-                                    ? _loadingProgress
-                                    : null,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppConfig.primaryColor),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Loading...',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: AppConfig.primaryColor,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                   ],
                 )
               : OfflineScreen(
