@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:webview_master_app/config/app_config.dart';
 import 'package:webview_master_app/config/theme_config.dart';
 import 'package:webview_master_app/screens/splash_screen.dart';
+import 'package:webview_master_app/screens/webview_screen.dart';
 import 'package:webview_master_app/utils/prefs_util.dart';
 import 'package:webview_master_app/utils/fcm_background_handler.dart';
 import 'package:webview_master_app/utils/notification_service.dart';
@@ -45,16 +46,14 @@ void main() async {
   }
 
   // Initial system UI overlay style (will be updated based on theme in each screen)
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: AppConfig.statusBarColorLight,
-      statusBarIconBrightness: AppConfig.statusBarIconBrightnessLight,
-      systemNavigationBarColor: AppConfig.navigationBarColorLight,
-      systemNavigationBarIconBrightness:
-          AppConfig.navigationBarIconBrightnessLight,
-    ),
-  );
-
+  // main.dart ke andar SystemChrome wala part
+SystemChrome.setSystemUIOverlayStyle(
+  const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent, // Splash screen full screen dikhegi
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Color(0xFFDC2626), // Splash ke color jaisa
+  ),
+);
   runApp(const MyApp());
 }
 

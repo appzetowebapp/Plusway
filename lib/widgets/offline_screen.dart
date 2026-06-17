@@ -19,11 +19,16 @@ class OfflineScreen extends StatelessWidget {
       height: double.infinity,
       color: isDark ? const Color(0xFF121212) : Colors.white,
       child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(40.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+        child: RefreshIndicator(
+          onRefresh: () async {
+            onRetry();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(40.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
               // Animated Offline Icon
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -145,6 +150,7 @@ class OfflineScreen extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
